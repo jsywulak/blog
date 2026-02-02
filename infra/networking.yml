@@ -11,3 +11,114 @@ Resources:
       Tags:
         - Key: Name
           Value: blog-vpc
+
+  PublicSubnet1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref BlogVPC
+      CidrBlock: 10.0.0.0/26
+      AvailabilityZone: us-east-1a
+      Tags:
+        - Key: Name
+          Value: public-a
+
+  PublicSubnet1b:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref BlogVPC
+      CidrBlock: 10.0.0.64/26
+      AvailabilityZone: us-east-1b
+      Tags:
+        - Key: Name
+          Value: public-b
+
+  PrivateSubnet1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref BlogVPC
+      CidrBlock: 10.0.0.128/26
+      AvailabilityZone: us-east-1a
+      Tags:
+        - Key: Name
+          Value: private-a
+
+  PrivateSubnet1b:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref BlogVPC
+      CidrBlock: 10.0.0.192/26
+      AvailabilityZone: us-east-1b
+      Tags:
+        - Key: Name
+          Value: private-b
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: blog-igw
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref BlogVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref BlogVPC
+      Tags:
+        - Key: Name
+          Value: public
+
+  PublicSubnet1aRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1a
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet1bRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1b
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  BlogInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for blog instance
+      VpcId: !Ref BlogVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: blog-instance-sg
+
+  BlogInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64}}'
+      KeyName: jonny-personal-laptop
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !Ref PublicSubnet1a
+          AssociatePublicIpAddress: true
+          GroupSet:
+            - !Ref BlogInstanceSecurityGroup
+      Tags:
+        - Key: Name
+          Value: blog-instance
