@@ -3,8 +3,15 @@
 import json
 import boto3
 import requests
-from behave import when, then
+from behave import given, when, then
 from botocore.exceptions import ClientError
+
+
+@given("AWS credentials are available")
+def step_aws_credentials_available(context):
+    """Assert that AWS credentials are available."""
+    assert context.aws_available, "AWS credentials are not available"
+    assert context.aws_session is not None, "AWS session is not initialized"
 
 
 @when('I look up the S3 bucket named "{bucket_name}"')
