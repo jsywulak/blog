@@ -1,11 +1,8 @@
-.PHONY: all deploy deploy-networking deploy-website test destroy destroy-networking destroy-website
+.PHONY: all deploy deploy-website test destroy destroy-website
 
 all: deploy test
 
-deploy: deploy-networking deploy-website
-
-deploy-networking:
-	aws cloudformation deploy --template-file infra/networking.yml --stack-name blog-networking
+deploy: deploy-website
 
 deploy-website:
 	aws cloudformation deploy \
@@ -16,10 +13,7 @@ deploy-website:
 test:
 	behave
 
-destroy: destroy-website destroy-networking
-
-destroy-networking:
-	aws cloudformation delete-stack --stack-name blog-networking
+destroy: destroy-website
 
 destroy-website:
 	aws cloudformation delete-stack --stack-name blog-website
