@@ -1,3 +1,5 @@
 behave
 boto3
+jinja2
+markdown
 requests

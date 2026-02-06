@@ -13,12 +13,12 @@
     <main>
         <h1>Posts</h1>
         <ul>
-        
+        {% for post in posts %}
             <li>
-                <a href="hello-world.html">Hello, world!</a>
-                <time>2026-02-05</time>
+                <a href="{{ post.slug }}.html">{{ post.title }}</a>
+                <time>{{ post.date }}</time>
             </li>
-        
+        {% endfor %}
         </ul>
     </main>
 </body>

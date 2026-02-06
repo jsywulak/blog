@@ -1,8 +1,11 @@
-.PHONY: all deploy deploy-website deploy-content test destroy destroy-website empty-website-bucket
+.PHONY: all deploy deploy-website build deploy-content test destroy destroy-website empty-website-bucket
 
 all: deploy test
 
-deploy: deploy-website deploy-content
+deploy: deploy-website build deploy-content
+
+build:
+	python build.py
 
 deploy-website:
 	$(eval HOSTED_ZONE_ID := $(shell aws route53 list-hosted-zones-by-name --dns-name jsywulak.com --query "HostedZones[?Name=='jsywulak.com.'].Id" --output text | sed 's|/hostedzone/||'))

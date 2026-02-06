@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>jsywulak.com</title>
+    <title>{{ title }} - jsywulak.com</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,15 +11,10 @@
         <nav><a href="/">jsywulak.com</a></nav>
     </header>
     <main>
-        <h1>Posts</h1>
-        <ul>
-        
-            <li>
-                <a href="hello-world.html">Hello, world!</a>
-                <time>2026-02-05</time>
-            </li>
-        
-        </ul>
+        <article>
+            <h1>{{ title }}</h1>
+            {{ content }}
+        </article>
     </main>
 </body>
 </html>
