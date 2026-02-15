@@ -3,18 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} - jsywulak.com</title>
+    <title>{{ title }} - old man yells about cloud</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
-        <nav><a href="/">jsywulak.com</a></nav>
+        <nav><a href="/">old man yells about cloud</a></nav>
     </header>
-    <main>
+        <nav class="post-nav">
+            {% if prev_post %}<a href="{{ prev_post.slug }}.html">← {{ prev_post.title }}</a> | {% endif %}
+            <a href="/">Home</a>
+            {% if next_post %}| <a href="{{ next_post.slug }}.html">{{ next_post.title }} →</a>{% endif %}
+        </nav>
+        <main>
         <article>
             <h1>{{ title }}</h1>
+            {% if date %}<time>{{ date }}</time>{% endif %}
             {{ content }}
         </article>
+
     </main>
 </body>
 </html>

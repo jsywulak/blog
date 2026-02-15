@@ -1,8 +1,7 @@
 ---
-title: Hello, world!
-date: 2026-02-05
+title: Is this thing on?
+date: 2026-02-07
+published: true
 ---
 
-Welcome to my blog. This is my first post, built with a simple static site generator.
-
-More to come soon.
+Been kicking around the idea of starting a blog for a while now. Not sure what I exactly I wanted to write about, but was pretty sure that instead of using a pre-existing blogging solution I should instead put together my own thing. So I guess I'll start writing about that.
