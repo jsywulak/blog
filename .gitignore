@@ -1,5 +1,6 @@
 # manually added
 .tool-versions
+.DS_Store
 site/
 
 # Byte-compiled / optimized / DLL files
