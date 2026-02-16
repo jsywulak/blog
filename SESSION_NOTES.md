@@ -1,4 +1,4 @@
-# Session Notes - AWS Infrastructure Setup
+# Session Notes
 
 ## 2025.02.01
 
