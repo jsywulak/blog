@@ -12,21 +12,13 @@ a flow chart for whether or not you should do something with jira
     don't do this with jira.            do this with jira.
 
 
+I have a lot of neo-luddite opinions but the one that remote working ruins the most is that the apex project management technique is just _post its on a wall_.
 
-
-
-
-I have a lot of neo-luddite opinions but the one that remote working ruins the most is the apex project management technique: just post its on a wall.
-
-Have a list of things you need to do? Post its on a wall near your desk.
-
-Have a list of things that a team of people need to do? Post its on a wall that is near the team.
-
-Need to make it clear what things are in progress, blocked, and complete? Post its in columns on a wall.
-
-Need to keep force your task decomposition to a point where work items can be actioned within a day or so? You can only write so much on a post it. 
-
-Finding yourself with a huge backlog that you'll never do? Not with post its on a wall, because you only have so much wall. 
+* Have a list of things you need to do? Post its on a wall near your desk.
+* Have a list of things that a team of people need to do? Post its on a wall that is near the team.
+* Need to make it clear what things are in progress, blocked, and complete? Post its in columns on a wall.
+* Need to keep force your task decomposition to a point where work items can be actioned within a day or so? You can only write so much on a post it. 
+* Finding yourself with a huge backlog that you'll never do? Not with post its on a wall, because you only have so much wall. 
 
 Never have you been unable to move a post it to another part of the wall because it didn't have a specific field filled out. Never has anyone ever asked you to align your post it on a wall to another, bigger postit on another wall in a room you can't see. 
 
