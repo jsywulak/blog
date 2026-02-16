@@ -68,3 +68,37 @@ The week number includes some messing around I did earlier in the day as well.
   Current week (all models)
   ████████                                           16% used
   Resets Feb 8 at 1pm (America/New_York)
+
+
+## 2026.02.15
+
+### Navigation Links
+- Added prev/next post navigation to `templates/base.html` — links use the post title as link text, with a Home link in between
+- Updated `build.py` to sort posts chronologically and pass prev/next post context when rendering each post page
+- Added post date display beneath the title on each post page using the `<time>` element
+- Adjusted CSS to tighten spacing between `h1` and the date (`h1 margin-bottom: 0rem`, `article time` styled as a block with `margin-bottom: 1rem`)
+
+### Draft Functionality
+- Added `published` frontmatter field support to `build.py` — defaults to `true` if omitted
+- Draft posts (`published: false`) are still built to HTML for preview, but excluded from the index page and prev/next navigation
+- Published posts skip over drafts in navigation order
+- Created `content/draft.md` as a permanent draft for testing the feature
+
+### Content
+- Created two additional blog posts: `content/on-static-sites.md` and `content/morning-coffee.md`
+- Added `published: true` to all existing content files
+
+### Testing
+- Created `features/website-content.feature` with Behave BDD scenarios validating draft functionality — draft not on index, not linked from published posts, HTML still generated, no nav links on draft page
+- Created `features/steps/content_steps.py` with step definitions that check the pre-built `site/` output
+
+### Misc
+- Added `.DS_Store` to `.gitignore`
+
+  Current session                                                                  
+  █████████▌                                         19% used                                                                                                                                    
+  Resets 9pm (America/New_York)                                                                                                                                                                  
+
+  Current week (all models)
+  █▌                                                 3% used
+  Resets Feb 22 at 4pm (America/New_York)
