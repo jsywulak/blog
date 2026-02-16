@@ -1,7 +1,7 @@
 ---
-title: Morning Coffee
+title: I hate John Fetterman
 date: 2025-09-03
-published: true
+published: false
 ---
 
-I have been experimenting with brewing methods lately and landed on the Aeropress as my daily driver. The whole ritual takes about four minutes from kettle to cup, which is just long enough to feel intentional without becoming a production. There is a meditative quality to the process — boil water, grind beans, press slowly — that sets a better tone for the morning than reaching for my phone ever did.
+I've never been particularly happy with anyone that I voted for that won, but I've never regretted voting for anyone than John Fetterman, and it's not even close.
