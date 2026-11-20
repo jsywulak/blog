@@ -61,3 +61,12 @@ Feature: CloudFront Static Website Hosting
   Scenario: Bucket contents are not reachable directly from S3
     When I make an HTTP request to "https://s3.amazonaws.com/jsywulak.com/index.html"
     Then the response status code should be 403
+
+  Scenario: Posts are served at their dated path
+    When I make an HTTP request to "https://blog.jsywulak.com/2026/02/15/on-static-sites.html"
+    Then the response status code should be 200
+    And the response should contain "On Static Sites"
+
+  Scenario: Old undated post paths are gone
+    When I make an HTTP request to "https://blog.jsywulak.com/on-static-sites.html"
+    Then the response status code should be 404

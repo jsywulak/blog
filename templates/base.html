@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - old man yells about cloud</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <header>
         <nav><a href="/">old man yells about cloud</a></nav>
     </header>
         <nav class="post-nav">
-            {% if prev_post %}<a href="{{ prev_post.slug }}.html">← {{ prev_post.title }}</a> | {% endif %}
+            {% if prev_post %}<a href="/{{ prev_post.url }}">← {{ prev_post.title }}</a> | {% endif %}
             <a href="/">Home</a>
-            {% if next_post %}| <a href="{{ next_post.slug }}.html">{{ next_post.title }} →</a>{% endif %}
+            {% if next_post %}| <a href="/{{ next_post.url }}">{{ next_post.title }} →</a>{% endif %}
         </nav>
         <main>
         <article>

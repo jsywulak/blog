@@ -1,6 +1,7 @@
 import glob
 import os
 import shutil
+from datetime import datetime
 
 import markdown
 from jinja2 import Environment, FileSystemLoader
@@ -18,10 +19,14 @@ def parse_post(filepath):
     meta = md.Meta
     slug = os.path.splitext(os.path.basename(filepath))[0]
     published = meta.get("published", ["true"])[0].lower() == "true"
+    date = meta["date"][0]
+    # Posts live at yyyy/mm/dd/slug.html
+    date_path = datetime.strptime(date, "%Y-%m-%d").strftime("%Y/%m/%d")
     return {
         "title": meta["title"][0],
-        "date": meta["date"][0],
+        "date": date,
         "slug": slug,
+        "url": f"{date_path}/{slug}.html",
         "content": body,
         "published": published,
     }
@@ -32,7 +37,9 @@ def build():
     base_template = env.get_template("base.html")
     index_template = env.get_template("index.html")
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    # Start clean so removed or renamed posts don't linger
+    shutil.rmtree(OUTPUT_DIR, ignore_errors=True)
+    os.makedirs(OUTPUT_DIR)
 
     # Collect and sort posts by date (oldest first for chronological order)
     posts = []
@@ -60,7 +67,9 @@ def build():
             prev_post=prev_post,
             next_post=next_post,
         )
-        with open(f"{OUTPUT_DIR}/{post['slug']}.html", "w") as f:
+        output_path = f"{OUTPUT_DIR}/{post['url']}"
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, "w") as f:
             f.write(html)
 
     # Reverse for index (newest first)

@@ -17,9 +17,9 @@ deploy-website:
 		aws cloudformation wait stack-update-complete --stack-name blog-website
 
 deploy-content:
-	aws s3 sync site/ s3://jsywulak.com/
+	aws s3 sync --delete site/ s3://jsywulak.com/
 	$(eval DISTRIBUTION_ID := $(shell aws cloudformation describe-stacks --stack-name blog-website --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" --output text))
-	aws cloudfront create-invalidation --distribution-id $(DISTRIBUTION_ID) --paths "/*"
+	aws cloudfront create-invalidation --distribution-id $(DISTRIBUTION_ID) --paths "/*" | jq .
 
 test:
 	behave

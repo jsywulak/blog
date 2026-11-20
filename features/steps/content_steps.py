@@ -30,17 +30,17 @@ def step_index_no_link(context, filename):
         f"Index page unexpectedly contains a link to {filename}"
 
 
-@then('no published post should contain a link to "{filename}"')
-def step_no_post_links_to(context, filename):
-    """Assert no published post page links to the given file."""
-    for filepath in glob.glob(os.path.join(OUTPUT_DIR, "*.html")):
-        basename = os.path.basename(filepath)
-        if basename in ("index.html", "404.html", filename):
+@then('no published post should contain a link to "{href}"')
+def step_no_post_links_to(context, href):
+    """Assert no published post page links to the given path."""
+    for filepath in glob.glob(os.path.join(OUTPUT_DIR, "**", "*.html"), recursive=True):
+        relpath = os.path.relpath(filepath, OUTPUT_DIR)
+        if relpath in ("index.html", "404.html") or f"/{relpath}" == href:
             continue
         with open(filepath) as f:
             content = f.read()
-        assert f'href="{filename}"' not in content, \
-            f"Published post {basename} unexpectedly contains a link to {filename}"
+        assert f'href="{href}"' not in content, \
+            f"Published post {relpath} unexpectedly contains a link to {href}"
 
 
 @then('the file "{filename}" should exist in the output')
@@ -48,6 +48,23 @@ def step_file_exists(context, filename):
     """Assert a file exists in the output directory."""
     filepath = os.path.join(OUTPUT_DIR, filename)
     assert os.path.exists(filepath), f"Expected {filename} to exist in {OUTPUT_DIR}/"
+
+
+@then('the file "{filename}" should not exist in the output')
+def step_file_does_not_exist(context, filename):
+    """Assert a file does not exist in the output directory."""
+    filepath = os.path.join(OUTPUT_DIR, filename)
+    assert not os.path.exists(filepath), f"Expected {filename} not to exist in {OUTPUT_DIR}/"
+
+
+@then('the page "{filename}" should link to "{href}"')
+def step_page_links_to(context, filename, href):
+    """Assert a page contains a link to the given path."""
+    filepath = os.path.join(OUTPUT_DIR, filename)
+    assert os.path.exists(filepath), f"Expected {filename} to exist in {OUTPUT_DIR}/"
+    with open(filepath) as f:
+        content = f.read()
+    assert f'href="{href}"' in content, f"{filename} does not contain a link to {href}"
 
 
 @then('the page "{filename}" should have no prev or next navigation links')
