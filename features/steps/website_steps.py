@@ -36,34 +36,6 @@ def step_bucket_exists(context):
     assert context.bucket_exists, f"Bucket '{context.bucket_name}' does not exist"
 
 
-@then("the bucket should have website hosting enabled")
-def step_bucket_website_enabled(context):
-    """Assert the bucket has website hosting enabled."""
-    s3_client = context.aws_session.client("s3")
-    try:
-        response = s3_client.get_bucket_website(Bucket=context.bucket_name)
-        context.website_config = response
-    except ClientError as e:
-        error_code = e.response.get("Error", {}).get("Code")
-        if error_code == "NoSuchWebsiteConfiguration":
-            assert False, f"Bucket '{context.bucket_name}' does not have website hosting enabled"
-        raise
-
-
-@then('the bucket should have index document set to "{index_doc}"')
-def step_bucket_index_document(context, index_doc):
-    """Assert the bucket has the specified index document."""
-    actual = context.website_config.get("IndexDocument", {}).get("Suffix")
-    assert actual == index_doc, f"Expected index document '{index_doc}', got '{actual}'"
-
-
-@then('the bucket should have error document set to "{error_doc}"')
-def step_bucket_error_document(context, error_doc):
-    """Assert the bucket has the specified error document."""
-    actual = context.website_config.get("ErrorDocument", {}).get("Key")
-    assert actual == error_doc, f"Expected error document '{error_doc}', got '{actual}'"
-
-
 @when("I look up the bucket policy")
 def step_look_up_bucket_policy(context):
     """Look up the bucket policy."""
@@ -79,24 +51,44 @@ def step_look_up_bucket_policy(context):
             raise
 
 
-@then("the bucket policy should allow public read access")
-def step_bucket_policy_public_read(context):
-    """Assert the bucket policy allows public read access."""
+def _policy_statements_allowing_get(policy):
+    """Return the Allow statements in a bucket policy that grant s3:GetObject."""
+    matches = []
+    for statement in policy.get("Statement", []):
+        actions = statement.get("Action", [])
+        # Handle case where Action is a string, not a list
+        if isinstance(actions, str):
+            actions = [actions]
+        if statement.get("Effect") == "Allow" and "s3:GetObject" in actions:
+            matches.append(statement)
+    return matches
+
+
+@then("the bucket policy should not allow public read access")
+def step_bucket_policy_not_public_read(context):
+    """Assert the bucket policy does not allow public read access."""
     assert context.bucket_policy is not None, "Bucket has no policy"
 
-    statements = context.bucket_policy.get("Statement", [])
-    for statement in statements:
-        if (statement.get("Effect") == "Allow" and
-            statement.get("Principal") == "*" and
-            "s3:GetObject" in statement.get("Action", [])):
-            return
-        # Handle case where Action is a string, not a list
-        if (statement.get("Effect") == "Allow" and
-            statement.get("Principal") == "*" and
-            statement.get("Action") == "s3:GetObject"):
+    for statement in _policy_statements_allowing_get(context.bucket_policy):
+        principal = statement.get("Principal")
+        assert principal != "*" and principal != {"AWS": "*"}, \
+            "Bucket policy allows public read access"
+
+
+@then("the bucket policy should allow CloudFront to read objects")
+def step_bucket_policy_cloudfront_read(context):
+    """Assert the bucket policy allows only the CloudFront service to read objects."""
+    assert context.bucket_policy is not None, "Bucket has no policy"
+
+    for statement in _policy_statements_allowing_get(context.bucket_policy):
+        principal = statement.get("Principal")
+        if isinstance(principal, dict) and principal.get("Service") == "cloudfront.amazonaws.com":
+            source_arn = statement.get("Condition", {}).get("StringEquals", {}).get("AWS:SourceArn", "")
+            assert ":distribution/" in source_arn, \
+                "CloudFront read access is not restricted to a specific distribution"
             return
 
-    assert False, "Bucket policy does not allow public read access"
+    assert False, "Bucket policy does not allow CloudFront to read objects"
 
 
 @when("I look up the public access block configuration")
@@ -114,18 +106,16 @@ def step_look_up_public_access_block(context):
             raise
 
 
-@then("public access should not be blocked")
-def step_public_access_not_blocked(context):
-    """Assert public access is not blocked."""
-    if context.public_access_block is None:
-        # No public access block means public access is allowed
-        return
+@then("public access should be blocked")
+def step_public_access_blocked(context):
+    """Assert all public access is blocked."""
+    assert context.public_access_block is not None, "Bucket has no public access block configuration"
 
     config = context.public_access_block
-    assert not config.get("BlockPublicAcls", False), "BlockPublicAcls is enabled"
-    assert not config.get("BlockPublicPolicy", False), "BlockPublicPolicy is enabled"
-    assert not config.get("IgnorePublicAcls", False), "IgnorePublicAcls is enabled"
-    assert not config.get("RestrictPublicBuckets", False), "RestrictPublicBuckets is enabled"
+    assert config.get("BlockPublicAcls", False), "BlockPublicAcls is disabled"
+    assert config.get("BlockPublicPolicy", False), "BlockPublicPolicy is disabled"
+    assert config.get("IgnorePublicAcls", False), "IgnorePublicAcls is disabled"
+    assert config.get("RestrictPublicBuckets", False), "RestrictPublicBuckets is disabled"
 
 
 @when('I look up the Route 53 hosted zone for "{domain}"')
@@ -148,9 +138,9 @@ def step_look_up_hosted_zone(context, domain):
     assert context.hosted_zone is not None, f"Hosted zone for '{domain}' not found"
 
 
-@when('I look up the A record for "{domain}"')
-def step_look_up_a_record(context, domain):
-    """Look up the A record for a domain."""
+@when('I look up the {record_type} record for "{domain}"')
+def step_look_up_record(context, record_type, domain):
+    """Look up a DNS record of the given type for a domain."""
     route53_client = context.aws_session.client("route53")
 
     hosted_zone_id = context.hosted_zone.get("Id")
@@ -159,34 +149,33 @@ def step_look_up_a_record(context, domain):
     response = route53_client.list_resource_record_sets(
         HostedZoneId=hosted_zone_id,
         StartRecordName=domain_with_dot,
-        StartRecordType="A",
+        StartRecordType=record_type,
         MaxItems="1"
     )
 
     record_sets = response.get("ResourceRecordSets", [])
-    context.a_record = None
+    context.dns_record = None
     for record in record_sets:
-        if record.get("Name") == domain_with_dot and record.get("Type") == "A":
-            context.a_record = record
+        if record.get("Name") == domain_with_dot and record.get("Type") == record_type:
+            context.dns_record = record
             break
 
 
-@then("the A record should exist")
-def step_a_record_exists(context):
-    """Assert the A record exists."""
-    assert context.a_record is not None, "A record does not exist"
+@then("the {record_type} record should exist")
+def step_record_exists(context, record_type):
+    """Assert the DNS record exists."""
+    assert context.dns_record is not None, f"{record_type} record does not exist"
 
 
-@then("the A record should be an alias to S3 website endpoint")
-def step_a_record_alias_to_s3(context):
-    """Assert the A record is an alias to an S3 website endpoint."""
-    alias_target = context.a_record.get("AliasTarget")
-    assert alias_target is not None, "A record is not an alias record"
+@then("the {record_type} record should be an alias to a CloudFront distribution")
+def step_record_alias_to_cloudfront(context, record_type):
+    """Assert the DNS record is an alias to a CloudFront distribution."""
+    alias_target = context.dns_record.get("AliasTarget")
+    assert alias_target is not None, f"{record_type} record is not an alias record"
 
     dns_name = alias_target.get("DNSName", "")
-    # S3 website endpoints contain s3-website
-    assert "s3-website" in dns_name or "s3.amazonaws.com" in dns_name, \
-        f"A record alias target '{dns_name}' is not an S3 website endpoint"
+    assert dns_name.rstrip(".").endswith(".cloudfront.net"), \
+        f"{record_type} record alias target '{dns_name}' is not a CloudFront distribution"
 
 
 @when('I make an HTTP request to "{url}"')
@@ -194,6 +183,16 @@ def step_make_http_request(context, url):
     """Make an HTTP request to a URL."""
     try:
         context.http_response = requests.get(url, timeout=30)
+    except requests.exceptions.RequestException as e:
+        context.http_response = None
+        context.http_error = str(e)
+
+
+@when('I make an HTTP request to "{url}" without following redirects')
+def step_make_http_request_no_redirects(context, url):
+    """Make an HTTP request to a URL without following redirects."""
+    try:
+        context.http_response = requests.get(url, timeout=30, allow_redirects=False)
     except requests.exceptions.RequestException as e:
         context.http_response = None
         context.http_error = str(e)
@@ -214,3 +213,20 @@ def step_response_has_content(context):
     assert context.http_response is not None, "No HTTP response"
     content = context.http_response.text
     assert len(content) > 0, "Response has no content"
+
+
+@then('the response should redirect to "{location}"')
+def step_response_redirects(context, location):
+    """Assert the HTTP response redirects to the given location."""
+    assert context.http_response is not None, \
+        f"HTTP request failed: {getattr(context, 'http_error', 'Unknown error')}"
+    actual = context.http_response.headers.get("Location")
+    assert actual == location, f"Expected redirect to '{location}', got '{actual}'"
+
+
+@then('the response should contain "{text}"')
+def step_response_contains(context, text):
+    """Assert the HTTP response body contains the given text."""
+    assert context.http_response is not None, \
+        f"HTTP request failed: {getattr(context, 'http_error', 'Unknown error')}"
+    assert text in context.http_response.text, f"Response does not contain '{text}'"

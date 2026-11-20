@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: S3 static website hosting for jsywulak.com
+Description: CloudFront + private S3 static website hosting for jsywulak.com
 
 Parameters:
   HostedZoneId:
@@ -11,14 +11,11 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: jsywulak.com
-      WebsiteConfiguration:
-        IndexDocument: index.html
-        ErrorDocument: 404.html
       PublicAccessBlockConfiguration:
-        BlockPublicAcls: false
-        BlockPublicPolicy: false
-        IgnorePublicAcls: false
-        RestrictPublicBuckets: false
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
       Tags:
         - Key: Name
           Value: blog-website-bucket
@@ -30,11 +27,68 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Sid: PublicReadGetObject
+          - Sid: AllowCloudFrontRead
             Effect: Allow
-            Principal: '*'
+            Principal:
+              Service: cloudfront.amazonaws.com
             Action: s3:GetObject
             Resource: !Sub '${WebsiteBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}'
+
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: jsywulak.com
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: jsywulak.com
+          HostedZoneId: !Ref HostedZoneId
+
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: blog-website-oac
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Aliases:
+          - jsywulak.com
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: website-bucket
+            DomainName: !GetAtt WebsiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: website-bucket
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # Managed-CachingOptimized
+          Compress: true
+        CustomErrorResponses:
+          # A private bucket returns 403 for missing keys
+          - ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+          - ErrorCode: 404
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+        ViewerCertificate:
+          AcmCertificateArn: !Ref Certificate
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
 
   WebsiteRecord:
     Type: AWS::Route53::RecordSet
@@ -43,14 +97,32 @@ Resources:
       Name: jsywulak.com
       Type: A
       AliasTarget:
-        DNSName: s3-website-us-east-1.amazonaws.com
-        HostedZoneId: Z3AQBSTGFYJSTF  # S3 website hosted zone for us-east-1
+        DNSName: !GetAtt Distribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2  # CloudFront hosted zone (global)
+
+  WebsiteRecordIPv6:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: jsywulak.com
+      Type: AAAA
+      AliasTarget:
+        DNSName: !GetAtt Distribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2  # CloudFront hosted zone (global)
 
 Outputs:
   WebsiteURL:
     Description: URL of the website
-    Value: !Sub 'http://${WebsiteBucket}.s3-website-us-east-1.amazonaws.com'
+    Value: https://jsywulak.com
 
   BucketName:
     Description: Name of the S3 bucket
     Value: !Ref WebsiteBucket
+
+  DistributionId:
+    Description: CloudFront distribution ID
+    Value: !Ref Distribution
+
+  DistributionDomainName:
+    Description: CloudFront distribution domain name
+    Value: !GetAtt Distribution.DomainName

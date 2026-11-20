@@ -1,36 +1,55 @@
-Feature: S3 Static Website Hosting
+Feature: CloudFront Static Website Hosting
   As a developer
-  I want to verify the S3 static website is correctly provisioned
-  So that jsywulak.com serves content reliably
+  I want to verify jsywulak.com is served over HTTPS through CloudFront from a private S3 bucket
+  So that jsywulak.com serves content securely and reliably
 
-  Scenario: Website S3 bucket exists with correct configuration
+  Scenario: Website S3 bucket exists
     Given AWS credentials are available
     When I look up the S3 bucket named "jsywulak.com"
     Then the bucket should exist
-    And the bucket should have website hosting enabled
-    And the bucket should have index document set to "index.html"
-    And the bucket should have error document set to "404.html"
 
-  Scenario: Website S3 bucket allows public access
-    Given AWS credentials are available
-    When I look up the S3 bucket named "jsywulak.com"
-    And I look up the bucket policy
-    Then the bucket policy should allow public read access
-
-  Scenario: Website S3 bucket has public access block disabled
+  Scenario: Website S3 bucket blocks public access
     Given AWS credentials are available
     When I look up the S3 bucket named "jsywulak.com"
     And I look up the public access block configuration
-    Then public access should not be blocked
+    Then public access should be blocked
 
-  Scenario: Route 53 A record exists for jsywulak.com
+  Scenario: Website S3 bucket is only readable by CloudFront
+    Given AWS credentials are available
+    When I look up the S3 bucket named "jsywulak.com"
+    And I look up the bucket policy
+    Then the bucket policy should not allow public read access
+    And the bucket policy should allow CloudFront to read objects
+
+  Scenario: Route 53 A record points to CloudFront
     Given AWS credentials are available
     When I look up the Route 53 hosted zone for "jsywulak.com"
     And I look up the A record for "jsywulak.com"
     Then the A record should exist
-    And the A record should be an alias to S3 website endpoint
+    And the A record should be an alias to a CloudFront distribution
 
-  Scenario: Website returns content via HTTP
-    When I make an HTTP request to "http://jsywulak.com"
+  Scenario: Route 53 AAAA record points to CloudFront
+    Given AWS credentials are available
+    When I look up the Route 53 hosted zone for "jsywulak.com"
+    And I look up the AAAA record for "jsywulak.com"
+    Then the AAAA record should exist
+    And the AAAA record should be an alias to a CloudFront distribution
+
+  Scenario: Website returns content via HTTPS
+    When I make an HTTP request to "https://jsywulak.com"
     Then the response status code should be 200
     And the response should contain content
+
+  Scenario: HTTP requests are redirected to HTTPS
+    When I make an HTTP request to "http://jsywulak.com" without following redirects
+    Then the response status code should be 301
+    And the response should redirect to "https://jsywulak.com/"
+
+  Scenario: Missing pages return the 404 page
+    When I make an HTTP request to "https://jsywulak.com/this-page-does-not-exist.html"
+    Then the response status code should be 404
+    And the response should contain "404 - Page Not Found"
+
+  Scenario: Bucket contents are not reachable directly from S3
+    When I make an HTTP request to "https://s3.amazonaws.com/jsywulak.com/index.html"
+    Then the response status code should be 403
