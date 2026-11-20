@@ -167,6 +167,12 @@ def step_record_exists(context, record_type):
     assert context.dns_record is not None, f"{record_type} record does not exist"
 
 
+@then("the {record_type} record should not exist")
+def step_record_does_not_exist(context, record_type):
+    """Assert the DNS record does not exist."""
+    assert context.dns_record is None, f"{record_type} record exists"
+
+
 @then("the {record_type} record should be an alias to a CloudFront distribution")
 def step_record_alias_to_cloudfront(context, record_type):
     """Assert the DNS record is an alias to a CloudFront distribution."""

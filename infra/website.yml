@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: CloudFront + private S3 static website hosting for jsywulak.com
+Description: CloudFront + private S3 static website hosting for blog.jsywulak.com
 
 Parameters:
   HostedZoneId:
@@ -40,10 +40,10 @@ Resources:
   Certificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: jsywulak.com
+      DomainName: blog.jsywulak.com
       ValidationMethod: DNS
       DomainValidationOptions:
-        - DomainName: jsywulak.com
+        - DomainName: blog.jsywulak.com
           HostedZoneId: !Ref HostedZoneId
 
   OriginAccessControl:
@@ -61,7 +61,7 @@ Resources:
       DistributionConfig:
         Enabled: true
         Aliases:
-          - jsywulak.com
+          - blog.jsywulak.com
         DefaultRootObject: index.html
         HttpVersion: http2and3
         IPV6Enabled: true
@@ -94,7 +94,7 @@ Resources:
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneId: !Ref HostedZoneId
-      Name: jsywulak.com
+      Name: blog.jsywulak.com
       Type: A
       AliasTarget:
         DNSName: !GetAtt Distribution.DomainName
@@ -104,7 +104,7 @@ Resources:
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneId: !Ref HostedZoneId
-      Name: jsywulak.com
+      Name: blog.jsywulak.com
       Type: AAAA
       AliasTarget:
         DNSName: !GetAtt Distribution.DomainName
@@ -113,7 +113,7 @@ Resources:
 Outputs:
   WebsiteURL:
     Description: URL of the website
-    Value: https://jsywulak.com
+    Value: https://blog.jsywulak.com
 
   BucketName:
     Description: Name of the S3 bucket
